@@ -111,13 +111,15 @@ class TestConstants(unittest.TestCase) :
 
    def test_dimensions(self) :
       self.assertTrue(len(self.dataset.dimensions) == 1)
-      self.assertTrue(self.dataset.dimensions.keys()[0] == "dim1")
+      dimnames = [k for k in self.dataset.dimensions.keys()]
+      self.assertTrue(dimnames[0] == "dim1")
       dim = self.dataset.dimensions['dim1']
       self.assertTrue(len(dim) == 3)
 
    def test_variables(self) :
       self.assertTrue(len(self.dataset.variables) == 1)
-      self.assertTrue(self.dataset.variables.keys()[0] == "var1")
+      varnames = [k for k in self.dataset.variables.keys()]
+      self.assertTrue(varnames[0] == "var1")
       var = self.dataset.variables['var1']
       self.assertTrue(var.att1 == "dummy attribute")
       data = var[:]

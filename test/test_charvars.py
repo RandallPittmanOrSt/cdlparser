@@ -50,7 +50,7 @@ class TestCharVars(unittest.TestCase) :
 
    def test_scalar_variables(self) :
       var = self.dataset.variables['letter']
-      self.assertTrue(var[:] == "X")
+      self.assertTrue(var[:] == b"X")
 
    def test_non_scalar_variables(self) :
       var = self.dataset.variables['regcodes']

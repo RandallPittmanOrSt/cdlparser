@@ -67,15 +67,23 @@ then you'll need to download and install them.
 
 Creator: Phil Bentley
 """
+from __future__ import print_function
+
 __version_info__ = (0, 0, 8, 'beta', 0)
 __version__ = "%d.%d.%d-%s" % __version_info__[0:4]
 
 import sys, os, logging, types
+import six
+import re
 import ply.lex as lex
 from ply.lex import TOKEN
 import ply.yacc as yacc
 import netCDF4 as nc4
 import numpy as np
+from functools import reduce
+
+if not six.PY2:
+   long = int
 
 # default fill values for netCDF-3 data types (as defined in netcdf.h include file)
 NC_FILL_BYTE   = np.int8(-127)
@@ -376,6 +384,7 @@ class CDL3Parser(CDLParser) :
    def t_SHORT_CONST(self, t) :
       r'[+-]?([0-9]+|0[xX][0-9a-fA-F]+)[sS]'
       #r'[+-]?[0-9]+[sS]|0[xX][0-9a-fA-F]+[sS]'   # original regex in ncgen3.l file
+      t.value = fix_octal(t.value)
       try :
          int_val = int(eval(t.value[:-1]))
       except :
@@ -391,6 +400,7 @@ class CDL3Parser(CDLParser) :
    def t_BYTE_CONST(self, t) :
       #r'[+-]?[0-9]+[Bb]'        # modified regex
       #r'[+-]?[0-9]*[0-9][Bb]'   # original regex in ncgen3.l file
+      t.value = fix_octal(t.value)
       try :
          if t.value[0] == "'" :
             int_val = ord(eval(t.value))
@@ -411,6 +421,7 @@ class CDL3Parser(CDLParser) :
       r'[+-]?([1-9][0-9]*|0[xX]?[0-9a-fA-F]+|0)'   # [Ll] suffix has been deprecated
       #r'[+-]?([1-9][0-9]*|0)[lL]?' # original regex for decimal integers in ncgen3.l file
       #r'0[xX]?[0-9a-fA-F]+[lL]?'   # original regex for octal or hex integers in ncgen3.l file
+      t.value = fix_octal(t.value)
       try :
          long_val = long(eval(t.value))
       except :
@@ -418,7 +429,7 @@ class CDL3Parser(CDLParser) :
          raise CDLContentError(errmsg)
       if long_val < XDR_INT_MIN or long_val > XDR_INT_MAX :
          errmsg = "Integer constant outside valid range (%d -> %d): %s" \
-            % (XDR_INT_MIN, XDR_INT_MAX, int_val)
+            % (XDR_INT_MIN, XDR_INT_MAX, long_val)
          raise CDLContentError(errmsg)
       else :
          t.value = np.int32(long_val)
@@ -472,7 +483,7 @@ class CDL3Parser(CDLParser) :
                  | dimd EQUALS DOUBLE_CONST
                  | dimd EQUALS NC_UNLIMITED_K"""
       dimname = ""
-      if isinstance(p[3], basestring) :
+      if isinstance(p[3], six.string_types) :
          if p[3] == "unlimited" :
             if self.rec_dimname :
                raise CDLContentError("Only one UNLIMITED dimension is allowed.")
@@ -639,7 +650,7 @@ class CDL3Parser(CDLParser) :
          try :
             self.write_var_data(var, arr)
             self.logger.info("Wrote %d data value(s) for variable %s" % (len(arr), p[1]))
-         except Exception, exc :
+         except Exception as exc :
             self.logger.error(str(exc))
             raise
 
@@ -772,7 +783,7 @@ class CDL3Parser(CDLParser) :
       arrlen = len(arr)
       varlen = var.size
       if is_charvar and var.ndim > 0 :
-         varlen /= var.shape[-1]
+         varlen = varlen // var.shape[-1]
       reclen = 0
       self.logger.debug("Length of passed-in data array = %d" % arrlen)
       if varlen : self.logger.debug("Expected length of variable = %d" % varlen)
@@ -782,7 +793,7 @@ class CDL3Parser(CDLParser) :
       if is_recvar :
          rec_dimlen = len(self.ncdataset.dimensions[self.rec_dimname])
          if rec_dimlen > 0 :   # record dimension has been set to non-zero
-            reclen = varlen / rec_dimlen
+            reclen = varlen // rec_dimlen
          else :                # record dimension is still equal to zero
             varlen = arrlen
             reclen = 1
@@ -806,7 +817,7 @@ class CDL3Parser(CDLParser) :
             put_char_data(var, arr, reclen)
          else :
             put_numeric_data(var, arr, reclen)
-      except Exception, exc :
+      except Exception as exc :
          errmsg = "Error attempting to write data array for variable %s\n" % var._name
          errmsg += "Exception details are as follows:\n%s" % str(exc)
          raise CDLContentError(errmsg)
@@ -814,12 +825,12 @@ class CDL3Parser(CDLParser) :
    def _lextest(self, data) :
       """private method - for test purposes only"""
       self.lexer.input(data)
-      print "-----"
+      print("-----")
       while 1 :
          t = self.lexer.token()
          if not t : break
-         print "type: %-15s\tvalue: %s" % (t.type, t.value)
-      print "-----"
+         print("type: %-15s\tvalue: %s" % (t.type, t.value))
+      print("-----")
 
 #---------------------------------------------------------------------------------------------------
 def put_numeric_data(var, arr, reclen=0) :
@@ -827,7 +838,7 @@ def put_numeric_data(var, arr, reclen=0) :
    """Write numeric data array to netcdf variable."""
    nparr = np.array(arr, dtype=var.dtype)
    shape = list(var.shape)
-   if reclen : shape[0] = len(arr) / reclen
+   if reclen : shape[0] = len(arr) // reclen
    nparr.shape = shape
    var[:] = nparr
 
@@ -838,7 +849,7 @@ def put_char_data(var, arr, reclen=0) :
    maxlen = var.shape[-1] if var.ndim > 0 else 1
    nparr = str_list_to_char_arr(arr, maxlen)
    shape = list(var.shape)
-   if reclen : shape[0] = len(arr) / reclen
+   if reclen : shape[0] = len(arr) // reclen
    nparr.shape = shape
    var[:] = nparr
 
@@ -899,7 +910,23 @@ def expand_escapes(tstring) :
    A Python version of ncgen's expand_escapes() function (see escapes.c). This function simply
    uses the built-in string.decode() method.
    """
-   return tstring.decode('string_escape')
+   if six.PY2:
+      return tstring.decode('string_escape')
+   else:
+      return(bytes(tstring, 'utf-8').decode('unicode_escape'))
+
+#---------------------------------------------------------------------------------------------------
+def fix_octal(octal_str) :
+#---------------------------------------------------------------------------------------------------
+   """
+   Fixes anything octal, including +/- prefix and letter suffix to use "0o"
+   """
+   m = re.match(r"([+-]?)0(\d+.*)", octal_str)
+   if m:
+      # Make octal python 3 compatible
+      return m.group(1) + "0o" + m.group(2)
+   else:
+      return octal_str
 
 #---------------------------------------------------------------------------------------------------
 def get_default_fill_value(datatype) :
@@ -926,14 +953,14 @@ def main() :
    """Rudimentary main function - primarily for testing purposes at this point in time."""
    debug = 0
    if len(sys.argv) < 2 :
-      print "usage: python cdlparser.py cdlfile [keyword=value, ...]"
+      print("usage: python cdlparser.py cdlfile [keyword=value, ...]")
       sys.exit(1)
    cdlfile = sys.argv[1]
    kwargs = {}
    if len(sys.argv) > 2 :
       keys = [x.split('=')[0] for x in sys.argv[2:]]
       vals = [eval(x.split('=')[1]) for x in sys.argv[2:]]
-      kwargs = dict(zip(keys,vals))
+      kwargs = dict(list(zip(keys,vals)))
    cdlparser = CDL3Parser(**kwargs)
    ncdataset = cdlparser.parse_file(cdlfile)
    try :
