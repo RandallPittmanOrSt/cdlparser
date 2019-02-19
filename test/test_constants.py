@@ -17,6 +17,9 @@ class TestConstants(unittest.TestCase) :
          variables:
             float var1(dim1) ;
                var1:att1 = "dummy attribute" ;
+               // FillValue necessary to enable masking in NETCDF3_CLASSIC right now.
+               // See https://github.com/Unidata/netcdf4-python/issues/725.
+               var1:_FillValue = 9.9692099683868690e+36;
          // global attributes
             :c1 = "foo" ;      // with spaces
             :c2="bar" ;        // w/o spaces
@@ -111,15 +114,13 @@ class TestConstants(unittest.TestCase) :
 
    def test_dimensions(self) :
       self.assertTrue(len(self.dataset.dimensions) == 1)
-      dimnames = [k for k in self.dataset.dimensions.keys()]
-      self.assertTrue(dimnames[0] == "dim1")
+      self.assertTrue('dim1' in self.dataset.dimensions.keys())
       dim = self.dataset.dimensions['dim1']
       self.assertTrue(len(dim) == 3)
 
    def test_variables(self) :
       self.assertTrue(len(self.dataset.variables) == 1)
-      varnames = [k for k in self.dataset.variables.keys()]
-      self.assertTrue(varnames[0] == "var1")
+      self.assertTrue("var1" in self.dataset.variables.keys())
       var = self.dataset.variables['var1']
       self.assertTrue(var.att1 == "dummy attribute")
       data = var[:]

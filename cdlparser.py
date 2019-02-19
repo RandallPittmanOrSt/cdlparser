@@ -960,7 +960,7 @@ def main() :
    if len(sys.argv) > 2 :
       keys = [x.split('=')[0] for x in sys.argv[2:]]
       vals = [eval(x.split('=')[1]) for x in sys.argv[2:]]
-      kwargs = dict(list(zip(keys,vals)))
+      kwargs = dict(zip(keys,vals))
    cdlparser = CDL3Parser(**kwargs)
    ncdataset = cdlparser.parse_file(cdlfile)
    try :
