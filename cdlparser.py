@@ -85,13 +85,16 @@ from functools import reduce
 if not six.PY2:
    long = int
 
-# default fill values for netCDF-3 data types (as defined in netcdf.h include file)
-NC_FILL_BYTE   = np.int8(-127)
-NC_FILL_CHAR   = np.str_('\0')
-NC_FILL_SHORT  = np.int16(-32767)
-NC_FILL_INT    = np.int32(-2147483647)
-NC_FILL_FLOAT  = np.float32(9.9692099683868690e+36)   # should get rounded to 9.96921e+36
-NC_FILL_DOUBLE = np.float64(9.9692099683868690e+36)
+# From netcdf.h
+default_fill_values = {
+   'S': np.str_('\0'),
+   'U': np.str_('\0'),
+   'b': np.int8(-127),
+   'h': np.int16(-32767),
+   'l': np.int32(-2147483647),
+   'f': np.float32(9.9692099683868690e+36),   # should get rounded to 9.96921e+36
+   'd': np.float64(9.9692099683868690e+36),
+}
 
 # miscellaneous constants as defined in the ncgen3.l file
 FILL_STRING = "_"
@@ -683,7 +686,7 @@ class CDL3Parser(CDLParser) :
             if '_FillValue' in self.curr_var.ncattrs() :
                p[0] = self.curr_var._FillValue
             else :
-               p[0] = get_default_fill_value(self.curr_var.dtype.char)
+               p[0] = get_default_fill_value(self.curr_var.dtype)
          else :
             self.logger.warn("Unable to replace fill value. Check CDL input for possible errors.")
             p[0] = p[1]
@@ -877,7 +880,7 @@ def pad_array(var, varlen, arr) :
    elif 'missing_value' in var.ncattrs() :
       fv = var.missing_value
    else :
-      fv = get_default_fill_value(var.dtype.char)
+      fv = get_default_fill_value(var.dtype)
    arrlen = len(arr)
    arr.extend([fv]*(varlen-arrlen))
 
@@ -929,23 +932,13 @@ def fix_octal(octal_str) :
       return octal_str
 
 #---------------------------------------------------------------------------------------------------
-def get_default_fill_value(datatype) :
+def get_default_fill_value(np_dtype) :
 #---------------------------------------------------------------------------------------------------
    """Returns the default netCDF fill value for the specified numpy dtype.char code."""
-   if datatype == 'b' :
-      return NC_FILL_BYTE
-   elif datatype in ('S','U') :
-      return NC_FILL_CHAR
-   elif datatype in ('h','s') :
-      return NC_FILL_SHORT
-   elif datatype == 'i' :
-      return NC_FILL_INT
-   elif datatype == 'f' :
-      return NC_FILL_FLOAT
-   elif datatype == 'd' :
-      return NC_FILL_DOUBLE
-   else :
-      raise CDLContentError("Unrecognised data type '%s'" % datatype)
+   try:
+      return default_fill_values[np_dtype.char]
+   except KeyError:
+      raise CDLContentError("Unrecognised data type '%s'" % np_dtype.char)
 
 #---------------------------------------------------------------------------------------------------
 def main() :
