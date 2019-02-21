@@ -96,10 +96,17 @@ default_fill_values = {
    'd': np.float64(9.9692099683868690e+36),
 }
 
+# from netcdf.h
+numeric_min_max = {
+   'b': (-128, 127),
+   'h': (-32768, 32767),
+   'l': (-2147483648, 2147483647),
+   'f': (-3.402823466e+38, 3.402823466e+38),
+   'd': (-1.7976931348623157e+308, 1.7976931348623157e+308)
+}
+
 # miscellaneous constants as defined in the ncgen3.l file
 FILL_STRING = "_"
-XDR_INT_MIN = -2147483648
-XDR_INT_MAX =  2147483647
 
 # netcdf to numpy data type map
 NC_NP_DATA_TYPE_MAP = {
@@ -361,62 +368,30 @@ class CDL3Parser(CDLParser) :
    @TOKEN(float_const)
    def t_FLOAT_CONST(self, t) :
       #r'[+-]?[0-9]*\.[0-9]*' + exp + r'?[Ff]|[+-]?[0-9]*' + exp + r'[Ff]'
-      try :
-         float_val = float(t.value[:-1])
-      except :
-         errmsg = "Bad float constant: %s" % t.value
-         raise CDLContentError(errmsg)
-      t.value = np.float32(float_val)
-      return t
+      return numeric_token(t, 1, float, np.float32, "float")
 
    @TOKEN(double_const)
    def t_DOUBLE_CONST(self, t) :
       # Original regex in ncgen3.l file. Since the [Ll] suffix is now deprecated, it's not used here.
       #r'[+-]?[0-9]*\.[0-9]*' + exp + r'?[LlDd]?|[+-]?[0-9]*' + exp + r'[LlDd]?'
-      try :
-         if t.value[-1] in "dD" :
-            double_val = float(t.value[:-1])
-         else :
-            double_val = float(t.value)
-      except :
-         errmsg = "Bad double constant: %s" % t.value
-         raise CDLContentError(errmsg)
-      t.value = np.float64(double_val)
-      return t
+      if t.value[-1] in "dD":
+         return numeric_token(t, 1, float, np.float64, "double")
+      else:
+         return numeric_token(t, 0, float, np.float64, "double")
 
    def t_SHORT_CONST(self, t) :
       r'[+-]?([0-9]+|0[xX][0-9a-fA-F]+)[sS]'
       #r'[+-]?[0-9]+[sS]|0[xX][0-9a-fA-F]+[sS]'   # original regex in ncgen3.l file
-      t.value = fix_octal(t.value)
-      try :
-         int_val = int(eval(t.value[:-1]))
-      except :
-         errmsg = "Bad short constant: %s" % t.value
-         raise CDLContentError(errmsg)
-      if int_val < -32768 or int_val > 32767 :
-         errmsg = "Short constant is outside valid range (-32768 -> 32767): %s" % int_val
-         raise CDLContentError(errmsg)
-      t.value = np.int16(int_val)
-      return t
+      return numeric_token(t, 1, int, np.int16, "short")
 
    @TOKEN(byte_const)
    def t_BYTE_CONST(self, t) :
       #r'[+-]?[0-9]+[Bb]'        # modified regex
       #r'[+-]?[0-9]*[0-9][Bb]'   # original regex in ncgen3.l file
-      t.value = fix_octal(t.value)
-      try :
-         if t.value[0] == "'" :
-            int_val = ord(eval(t.value))
-         else :
-            int_val = int(t.value[:-1])
-      except :
-         errmsg = "Bad byte constant: %s" % t.value
-         raise CDLContentError(errmsg)
-      if int_val < -128 or int_val > 127 :
-         errmsg = "Byte constant outside valid range (-128 -> 127): %s" % int_val
-         raise CDLContentError(errmsg)
-      t.value = np.int8(int_val)
-      return t
+      if t.value[0] == "'":
+         return numeric_token(t, 0, ord, np.int8, "byte")
+      else:
+         return numeric_token(t, 1, int, np.int8, "byte")
 
    # The following implementation for handling integer constants is a conflation of the separate
    # mechanisms defined in ncgen3.l for decimal, octal and hex integer constants.
@@ -424,19 +399,7 @@ class CDL3Parser(CDLParser) :
       r'[+-]?([1-9][0-9]*|0[xX]?[0-9a-fA-F]+|0)'   # [Ll] suffix has been deprecated
       #r'[+-]?([1-9][0-9]*|0)[lL]?' # original regex for decimal integers in ncgen3.l file
       #r'0[xX]?[0-9a-fA-F]+[lL]?'   # original regex for octal or hex integers in ncgen3.l file
-      t.value = fix_octal(t.value)
-      try :
-         long_val = long(eval(t.value))
-      except :
-         errmsg = "Bad integer constant: %s" %  t.value
-         raise CDLContentError(errmsg)
-      if long_val < XDR_INT_MIN or long_val > XDR_INT_MAX :
-         errmsg = "Integer constant outside valid range (%d -> %d): %s" \
-            % (XDR_INT_MIN, XDR_INT_MAX, long_val)
-         raise CDLContentError(errmsg)
-      else :
-         t.value = np.int32(long_val)
-      return t
+      return numeric_token(t, 0, long, np.int32, "integer")
 
    # newlines
    def t_newline(self, t):
@@ -834,6 +797,26 @@ class CDL3Parser(CDLParser) :
          if not t : break
          print("type: %-15s\tvalue: %s" % (t.type, t.value))
       print("-----")
+
+
+#---------------------------------------------------------------------------------------------------
+def numeric_token(t, nsuffix, basic_type_fn, np_type, type_name):
+   min_, max_ = numeric_min_max[np.dtype(np_type).char]
+   t.value = fix_octal(t.value)
+   try:
+      if nsuffix > 0:
+         num_val = basic_type_fn(eval(t.value[:-nsuffix]))
+      else:
+         num_val = basic_type_fn(eval(t.value))
+   except SyntaxError:
+      errmsg = "Bad %s constant: %s" % (type_name, t.value)
+      raise CDLContentError(errmsg)
+   if num_val < min_ or num_val > max_:
+      errmsg = "%s constant is outside valid range (%s -> %s): %s" % (type_name, min_, max_, num_val)
+      raise CDLContentError(errmsg)
+   t.value = np_type(num_val)
+   return t
+
 
 #---------------------------------------------------------------------------------------------------
 def put_numeric_data(var, arr, reclen=0) :
