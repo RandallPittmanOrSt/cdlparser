@@ -251,6 +251,10 @@ class CDL3Parser(CDLParser) :
       """
       Construct a CDL3Parser instance. See the CDLParser.__init__ docstring for a description of the
       currently supported keyword arguments.
+
+      Of particular note, the `file_format` keyword argument may be set to 'NETCDF3_CLASSIC',
+      'NETCDF3_64BIT_OFFSET', or 'NETCDF4_CLASSIC' with the CDL3 parser, as these all use the
+      classic data model.
       """
       super(CDL3Parser, self).__init__(**kwargs)
 
