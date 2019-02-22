@@ -2,19 +2,19 @@ import numpy as np
 import cdlparser
 
 cdlparser.default_fill_values.update({
-    'B': np.uint8(255),
-    'H': np.uint16(65535),
-    'L': np.uint32(4294967295),
-    'Q': np.uint64(18446744073709551614),
-    'q': np.int64(-9223372036854775806),
+    np.dtype('uint8'): np.uint8(255),
+    np.dtype('uint16'): np.uint16(65535),
+    np.dtype('uint32'): np.uint32(4294967295),
+    np.dtype('uint64'): np.uint64(18446744073709551614),
+    np.dtype('int64'): np.int64(-9223372036854775806),
 })
 
 cdlparser.numeric_min_max.update({
-   'B': (0, 255),
-   'H': (0,65535),
-   'L': (0, 4294967295),
-   'Q': (0, 18446744073709551615),
-   'q': (-9223372036854775807, 9223372036854775807),
+   np.dtype('uint8'): (0, 255),
+   np.dtype('uint16'): (0,65535),
+   np.dtype('uint32'): (0, 4294967295),
+   np.dtype('uint64'): (0, 18446744073709551615),
+   np.dtype('int64'): (-9223372036854775807, 9223372036854775807),
 })
 
 cdlparser.NC_NP_DATA_TYPE_MAP.update({

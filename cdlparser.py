@@ -87,22 +87,21 @@ if not six.PY2:
 
 # From netcdf.h
 default_fill_values = {
-   'S': np.str_('\0'),
-   'U': np.str_('\0'),
-   'b': np.int8(-127),
-   'h': np.int16(-32767),
-   'l': np.int32(-2147483647),
-   'f': np.float32(9.9692099683868690e+36),   # should get rounded to 9.96921e+36
-   'd': np.float64(9.9692099683868690e+36),
+   np.dtype('S1'): np.str_('\0'),
+   np.dtype('int8'): np.int8(-127),
+   np.dtype('int16'): np.int16(-32767),
+   np.dtype('int32'): np.int32(-2147483647),
+   np.dtype('float32'): np.float32(9.9692099683868690e+36),   # should get rounded to 9.96921e+36
+   np.dtype('float64'): np.float64(9.9692099683868690e+36),
 }
 
 # from netcdf.h
 numeric_min_max = {
-   'b': (-128, 127),
-   'h': (-32768, 32767),
-   'l': (-2147483648, 2147483647),
-   'f': (-3.402823466e+38, 3.402823466e+38),
-   'd': (-1.7976931348623157e+308, 1.7976931348623157e+308)
+   np.dtype('int8'): (-128, 127),
+   np.dtype('int16'): (-32768, 32767),
+   np.dtype('int32'): (-2147483648, 2147483647),
+   np.dtype('float32'): (-3.402823466e+38, 3.402823466e+38),
+   np.dtype('float64'): (-1.7976931348623157e+308, 1.7976931348623157e+308)
 }
 
 # miscellaneous constants as defined in the ncgen3.l file
@@ -805,7 +804,7 @@ class CDL3Parser(CDLParser) :
 
 #---------------------------------------------------------------------------------------------------
 def numeric_token(t, nsuffix, basic_type_fn, np_type, type_name):
-   min_, max_ = numeric_min_max[np.dtype(np_type).char]
+   min_, max_ = numeric_min_max[np.dtype(np_type)]
    t.value = fix_octal(t.value)
    try:
       if nsuffix > 0:
@@ -923,9 +922,9 @@ def get_default_fill_value(np_dtype) :
 #---------------------------------------------------------------------------------------------------
    """Returns the default netCDF fill value for the specified numpy dtype.char code."""
    try:
-      return default_fill_values[np_dtype.char]
+      return default_fill_values[np_dtype]
    except KeyError:
-      raise CDLContentError("Unrecognised data type '%s'" % np_dtype.char)
+      raise CDLContentError("Unrecognised data type '%s'" % np_dtype)
 
 #---------------------------------------------------------------------------------------------------
 def main() :
