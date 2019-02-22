@@ -1,6 +1,5 @@
 import numpy as np
 import cdlparser
-from cdlparser import CDL3Parser, numeric_token
 
 cdlparser.default_fill_values.update({
     'B': np.uint8(255),
@@ -27,7 +26,7 @@ cdlparser.NC_NP_DATA_TYPE_MAP.update({
 })
 
 # ---------------------------------------------------------------------------------------------------
-class CDF5Parser(CDL3Parser):
+class CDF5Parser(cdlparser.CDL3Parser):
     # ---------------------------------------------------------------------------------------------------
     """
     Class for parsing a CDL file with the classic data model, but extended with the unsigned and 64-bit
@@ -75,26 +74,23 @@ class CDF5Parser(CDL3Parser):
 
     def t_UBYTE_CONST(self, t):
         r'[+-]?[0-9]+[Uu][Bb]'
-        if t.value[0] == "'":
-            return numeric_token(t, 0, ord, np.uint8, "unsigned byte")
-        else:
-            return numeric_token(t, 2, int, np.uint8, "unsigned byte")
+        return cdlparser.numeric_token(t, 2, int, np.uint8, "unsigned byte")
 
     def t_USHORT_CONST(self, t):
         r'[+-]?([0-9]+|0[xX][0-9a-fA-F]+)[uU][sS]'
-        return numeric_token(t, 2, int, np.uint16, "unsigned short")
+        return cdlparser.numeric_token(t, 2, int, np.uint16, "unsigned short")
 
     def t_UINT64_CONST(self, t):
         r'[+-]?([0-9]+|0[xX][0-9a-fA-F]+)[uU][lL][lL]'
-        return numeric_token(t, 3, int, np.uint64, "unsigned 64-bit integer")
+        return cdlparser.numeric_token(t, 3, int, np.uint64, "unsigned 64-bit integer")
 
     def t_UINT_CONST(self, t):
         r'[+-]?([0-9]+|0[xX][0-9a-fA-F]+)[uU](?![lLsS])'
-        return numeric_token(t, 1, int, np.uint32, "unsigned integer")
+        return cdlparser.numeric_token(t, 1, int, np.uint32, "unsigned integer")
 
     def t_INT64_CONST(self, t):
         r'[+-]?([0-9]+|0[xX][0-9a-fA-F]+)[lL][lL]'
-        return numeric_token(t, 2, int, np.int64, "64-bit integer")
+        return cdlparser.numeric_token(t, 2, int, np.int64, "64-bit integer")
 
     def p_type(self, p):
         """type : UINT64_K
