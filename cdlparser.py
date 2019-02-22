@@ -168,8 +168,8 @@ class CDLParser(object) :
       self.init_logger()
 
       # Build the lexer and parser
-      self.lexer = lex.lex(module=self, debug=kwargs.get('debug', 0))
-      self.parser = yacc.yacc(module=self, **kwargs)
+      self.lexer = lex.lex(module=self, debug=kwargs.get('debug', False))
+      self.parser = yacc.yacc(module=self, debug=kwargs.get('debug', False), **kwargs)
 
    def parse_file(self, cdlfile, ncfile=None) :
       """
