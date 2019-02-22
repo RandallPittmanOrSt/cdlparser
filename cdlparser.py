@@ -278,7 +278,7 @@ class CDL3Parser(CDLParser) :
    tokens = [
       'NETCDF', 'DIMENSIONS', 'VARIABLES', 'DATA', 'IDENT', 'TERMSTRING',
       'BYTE_CONST', 'CHAR_CONST', 'SHORT_CONST', 'INT_CONST', 'FLOAT_CONST', 'DOUBLE_CONST',
-      'FILLVALUE', 'COMMENT', 'EQUALS', 'LBRACE', 'RBRACE', 'LPAREN', 'RPAREN', 'EOL'
+      'FILLVALUE', 'EQUALS', 'LBRACE', 'RBRACE', 'LPAREN', 'RPAREN', 'EOL'
    ] + list(set(reserved_words.values()))
 
    # literal characters

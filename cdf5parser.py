@@ -69,7 +69,7 @@ class CDF5Parser(cdlparser.CDL3Parser):
                  'UBYTE_CONST', 'USHORT_CONST', 'UINT64_CONST', 'UINT_CONST',
                  'BYTE_CONST', 'CHAR_CONST', 'SHORT_CONST', 'INT64_CONST', 'INT_CONST',
                  'FLOAT_CONST', 'DOUBLE_CONST',
-                 'FILLVALUE', 'COMMENT', 'EQUALS', 'LBRACE', 'RBRACE', 'LPAREN', 'RPAREN', 'EOL'
+                 'FILLVALUE', 'EQUALS', 'LBRACE', 'RBRACE', 'LPAREN', 'RPAREN', 'EOL'
              ] + list(set(reserved_words.values()))
 
     def t_UBYTE_CONST(self, t):
