@@ -32,10 +32,12 @@ class TestBasics(unittest.TestCase) :
             height = 10.0 ;
       }"""
       parser = cdlparser.CDL3Parser()
-      self.tmpfile = tempfile.mkstemp(suffix='.nc')[1]
+      self.tmpfh, self.tmpfile = tempfile.mkstemp(suffix='.nc')
       self.dataset = parser.parse_text(cdltext, ncfile=self.tmpfile)
 
    def tearDown(self) :
+      self.dataset.close()
+      os.close(self.tmpfh)  # Needed on Windows to be able to delete the file
       if os.path.exists(self.tmpfile) : os.remove(self.tmpfile)
 
    def test_global_atts(self) :
