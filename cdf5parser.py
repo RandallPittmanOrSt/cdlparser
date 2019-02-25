@@ -25,6 +25,11 @@ cdlparser.NC_NP_DATA_TYPE_MAP.update({
    'uint64':  'u8',
 })
 
+def dict_merge(a, b):
+    z = a.copy()
+    z.update(b)
+    return z
+
 # ---------------------------------------------------------------------------------------------------
 class CDF5Parser(cdlparser.CDL3Parser):
     # ---------------------------------------------------------------------------------------------------
@@ -44,33 +49,18 @@ class CDF5Parser(cdlparser.CDL3Parser):
         """
         super(CDF5Parser, self).__init__(file_format=file_format, **kwargs)
 
-    # netCDF-3 reserved words - mainly data types
-    reserved_words = {
+    extra_reserved_words = {
         'ubyte': 'UBYTE_K',
         'ushort': 'USHORT_K',
         'uint64': 'UINT64_K',
         'uint': 'UINT_K',
-        'byte': 'BYTE_K',
-        'char': 'CHAR_K',
-        'short': 'SHORT_K',
         'int64': 'INT64_K',
-        'int': 'INT_K',
-        'integer': 'INT_K',
-        'long': 'INT_K',
-        'float': 'FLOAT_K',
-        'real': 'FLOAT_K',
-        'double': 'DOUBLE_K',
-        'unlimited': 'NC_UNLIMITED_K'
     }
+    reserved_words = dict_merge(extra_reserved_words, cdlparser.CDL3Parser.reserved_words)
 
     # the full list of CDL tokens to parse - mostly named exactly as per the ncgen.l file
-    tokens = [
-                 'NETCDF', 'DIMENSIONS', 'VARIABLES', 'DATA', 'IDENT', 'TERMSTRING',
-                 'UBYTE_CONST', 'USHORT_CONST', 'UINT64_CONST', 'UINT_CONST',
-                 'BYTE_CONST', 'CHAR_CONST', 'SHORT_CONST', 'INT64_CONST', 'INT_CONST',
-                 'FLOAT_CONST', 'DOUBLE_CONST',
-                 'FILLVALUE', 'EQUALS', 'LBRACE', 'RBRACE', 'LPAREN', 'RPAREN', 'EOL'
-             ] + list(set(reserved_words.values()))
+    tokens = (['UBYTE_CONST', 'USHORT_CONST', 'UINT64_CONST', 'UINT_CONST', 'INT64_CONST'] +
+              list(set(extra_reserved_words.values())) + cdlparser.CDL3Parser.tokens)
 
     def t_UBYTE_CONST(self, t):
         r'[+-]?[0-9]+[Uu][Bb]'
