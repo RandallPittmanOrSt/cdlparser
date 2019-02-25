@@ -72,6 +72,7 @@ from __future__ import print_function
 __version_info__ = (0, 0, 8, 'beta', 0)
 __version__ = "%d.%d.%d-%s" % __version_info__[0:4]
 
+import codecs
 import sys, os, logging, types
 import six
 import re
@@ -179,9 +180,8 @@ class CDLParser(object) :
       :returns: A handle to a netCDF4.Dataset object.
       """
       self.cdlfile = cdlfile
-      f = open(cdlfile)
-      data = f.read()   # FIXME: can we parse input w/o reading entire CDL file into memory?
-      f.close()
+      with codecs.open(cdlfile, encoding="utf-8") as f:
+         data = f.read()   # FIXME: can we parse input w/o reading entire CDL file into memory?
       return self.parse_text(data, ncfile=ncfile)
 
    def parse_text(self, cdltext, ncfile=None) :
@@ -196,7 +196,8 @@ class CDLParser(object) :
       Alternatively, this can be done immediately upon completion of parsing by setting the
       close_on_completion keyword argument to True when instantiating the CDLParser instance.
 
-      :param cdltext: String containing the CDL text to parse.
+      :param cdltext: String containing the CDL text to parse. Must be unicode str if containing
+                      unicode.
       :param ncfile: Optional pathname of the netCDF file to receive output.
       :returns: A handle to a netCDF4.Dataset object.
       """
@@ -903,17 +904,30 @@ def deescapify(name) :
       i += 1
    return newname
 
+
+# Regex for finding escape sequences
+ESCAPE_SEQUENCE_RE = re.compile(r'''
+    ( \\U........      # 8-digit hex escapes
+    | \\u....          # 4-digit hex escapes
+    | \\x..            # 2-digit hex escapes
+    | \\[0-7]{1,3}     # Octal escapes
+    | \\N\{[^}]+\}     # Unicode characters by name
+    | \\[\\'"abfnrtv]  # Single-character escapes
+   )''', re.UNICODE | re.VERBOSE)
+
 #---------------------------------------------------------------------------------------------------
 def expand_escapes(tstring) :
 #---------------------------------------------------------------------------------------------------
    """
-   A Python version of ncgen's expand_escapes() function (see escapes.c). This function simply
-   uses the built-in string.decode() method.
+   Function to convert escapes to actual (unicode) characters. Fulfills the same purpose as
+      expand_escapes() in ncgen3/escapes.c or unescape() in ncgen/escapes.c.
+   Input string containing unicode must be a unicode string.
+   https://stackoverflow.com/a/24519338/2196270
    """
-   if six.PY2:
-      return tstring.decode('string_escape')
-   else:
-      return(bytes(tstring, 'utf-8').decode('unicode_escape'))
+   def decode_match(match):
+      return codecs.decode(match.group(0), 'unicode-escape')
+
+   return ESCAPE_SEQUENCE_RE.sub(decode_match, tstring)
 
 #---------------------------------------------------------------------------------------------------
 def fix_octal(octal_str) :
