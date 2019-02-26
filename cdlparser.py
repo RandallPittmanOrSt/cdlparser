@@ -650,7 +650,7 @@ class CDL3Parser(CDLParser) :
       # return the value of the constant, or the current variable's fill value if the specified
       # constant value is the string '_'.
       if p[1] == FILL_STRING :
-         if self.curr_var is not None and self.curr_var.dtype.kind != 'S' :   # numeric variables only
+         if self.curr_var is not None and self.curr_var.dtype != np.dtype('S1'):   # non-char vars only
             if '_FillValue' in self.curr_var.ncattrs() :
                p[0] = self.curr_var._FillValue
             else :
@@ -697,8 +697,9 @@ class CDL3Parser(CDLParser) :
          basedir = os.path.abspath(".")
       self.ncfile = os.path.join(basedir, ncname+'.nc')
 
-   def set_attribute(self, attid, attvallist) :
-      """Set a global or variable-scope attribute value."""
+   def set_attribute(self, attid, attvallist, string_attr=False) :
+      """Set a global or variable-scope attribute value.
+         string_attr is only used for netCDF-4"""
       if isinstance(attvallist, (list,tuple)) and len(attvallist) == 1 :
          attval = attvallist[0]
       else :
@@ -717,8 +718,18 @@ class CDL3Parser(CDLParser) :
             if attname in var.ncattrs() :
                raise CDLContentError("Duplicate attribute: %s" % attid)
             if attname == "_FillValue" :
-               attval = var.dtype.type(attval)
-            var.setncattr(attname, attval)
+               try:
+                  attval = var.dtype.type(attval)
+               except AttributeError:
+                  # str dtype, maybe? (NetCDF4)
+                  if var.dtype == np.dtype('str'):
+                     string_attr = True
+                  else:
+                     raise
+            if string_attr:
+               var.setncattr_string(attname, attval)
+            else:
+               var.setncattr(attname, attval)
             self.logger.info("Created attribute %s:%s = %s" % (varname, attname, repr(attval)))
          except :
             raise CDLContentError("Invalid attribute name specification: '%s'" % attid)
@@ -735,7 +746,7 @@ class CDL3Parser(CDLParser) :
       # - whether the variable is a record variable, i.e. has an unlimited dimension
 
       is_scalar = (var.ndim == 0)
-      is_charvar = (var.dtype.kind == 'S')
+      is_charvar = (var.dtype == np.dtype('S1'))
       is_recvar = self.rec_dimname in var.dimensions
 
       # scalar variables ought to be fairly straightforward      
