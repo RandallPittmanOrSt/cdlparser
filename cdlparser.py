@@ -697,24 +697,36 @@ class CDL3Parser(CDLParser) :
          basedir = os.path.abspath(".")
       self.ncfile = os.path.join(basedir, ncname+'.nc')
 
-   def set_attribute(self, attid, attvallist, string_attr=False) :
+   def set_attribute(self, attid, attvallist, att_type=None) :
       """Set a global or variable-scope attribute value.
-         string_attr is only used for netCDF-4"""
+         group and string_attr are only used for netCDF-4"""
+      NC4 = self.file_format == "NETCDF4"
       if isinstance(attvallist, (list,tuple)) and len(attvallist) == 1 :
          attval = attvallist[0]
       else :
          attval = attvallist
+      if NC4 and att_type is not None:
+         # Convert attval to the provided type
+         try:
+            attval = np.dtype(att_type).type(attval)
+         except ValueError:
+            raise CDLContentError("Could not create attr %s of type %s with value %s." %
+                                  (attid, att_type, repr(attval)))
       # global-scope attribute
       if attid[0] == ':' :
          if attid[1:] in self.ncdataset.ncattrs() :
             raise CDLContentError("Duplicate global attribute: %s" % attid)
-         self.ncdataset.setncattr(attid[1:], attval)
+         if NC4 and attval.dtype == np.dtype('str'):
+            self.ncdataset.setncattr_string(attid[1:], attval)
+         else:
+            self.ncdataset.setncattr(attid[1:], attval)
          self.logger.info("Created global attribute %s = %s" % (attid, repr(attval)))
       # variable-scope attribute
       else :
          try :
             (varname,attname) = attid.split(':')
             var = self.ncdataset.variables[varname]
+            string_attr = False
             if attname in var.ncattrs() :
                raise CDLContentError("Duplicate attribute: %s" % attid)
             if attname == "_FillValue" :
@@ -722,7 +734,7 @@ class CDL3Parser(CDLParser) :
                   attval = var.dtype.type(attval)
                except AttributeError:
                   # str dtype, maybe? (NetCDF4)
-                  if var.dtype == np.dtype('str'):
+                  if NC4 and var.dtype == np.dtype('str'):
                      string_attr = True
                   else:
                      raise

@@ -45,7 +45,34 @@ class CDF4Parser(cdf5parser.CDF5Parser):
     # def p_groupsection(self, p) :
     #     """groupsection : group dimsection vasection datasection
     #                     | empty"""
-        
+    def p_gattdecl(self, p):
+        """gattdecl : gatt EQUALS attvallist
+                    | type gatt EQUALS attvallist"""
+        if p[2] == "=":
+            att_type = None
+            attid = p[1]
+            attvallist = p[3]
+        else:
+            att_type = p[1]
+            attid = p[2]
+            attvallist = p[4]
+        if self.ncdataset:
+            self.set_attribute(':' + attid, attvallist, att_type=att_type)
+
+    def p_attdecl(self, p):
+        """attdecl : att EQUALS attvallist
+                   | type att EQUALS attvallist"""
+        if p[2] == "=":
+            att_type = None
+            attid = p[1]
+            attvallist = p[3]
+        else:
+            att_type = p[1]
+            attid = p[2]
+            attvallist = p[4]
+        if self.ncdataset:
+            self.set_attribute(attid, attvallist, att_type=att_type)
+
     def p_type(self, p):
         """type : UINT64_K
                 | USHORT_K
