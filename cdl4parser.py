@@ -9,13 +9,13 @@ cdlparser.NC_NP_DATA_TYPE_MAP.update({
    'string':  str,
 })
 
-class CDF4Parser(cdf5parser.CDF5Parser):
+class CDL4Parser(cdf5parser.CDF5Parser):
     def __init__(self, **kwargs):
         """
-        Construct a CDF4Parser instance. See the CDLParser.__init__ docstring for a description of the
+        Construct a CDL4Parser instance. See the CDLParser.__init__ docstring for a description of the
         currently supported keyword arguments.
         """
-        super(CDF4Parser, self).__init__(file_format='NETCDF4', **kwargs)
+        super(CDL4Parser, self).__init__(file_format='NETCDF4', **kwargs)
         self.groupstack = []
 
     extra_reserved_words = {
@@ -76,4 +76,4 @@ class CDF4Parser(cdf5parser.CDF5Parser):
                 | FLOAT_K
                 | DOUBLE_K
                 | STRING_K"""
-        super(CDF4Parser, self).p_type(p)
+        super(CDL4Parser, self).p_type(p)

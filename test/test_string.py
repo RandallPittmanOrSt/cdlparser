@@ -4,7 +4,7 @@ Unit tests for the CDF-5 constant types.
 import os
 import tempfile
 import unittest
-import cdf4parser
+import cdl4parser
 import numpy as np
 
 #---------------------------------------------------------------------------------------------------
@@ -24,7 +24,7 @@ class TestStrings(unittest.TestCase) :
             data:
                 strvar = "abc", "defg", "_", "def", "\nƷƬƫ";
             }"""
-        parser = cdf4parser.CDF4Parser()
+        parser = cdl4parser.CDL4Parser()
         self.tmpfh, self.tmpfile = tempfile.mkstemp(suffix='.nc')
         self.dataset = parser.parse_text(cdltext, ncfile=self.tmpfile)
 
