@@ -4,7 +4,7 @@ Unit tests for the CDF-5 constant types.
 import os
 import tempfile
 import unittest
-import cdl4parser
+from cdlparser import cdl4parser
 import numpy as np
 
 #---------------------------------------------------------------------------------------------------

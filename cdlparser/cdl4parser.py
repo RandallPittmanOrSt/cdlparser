@@ -1,5 +1,5 @@
-import cdf5parser
 import cdlparser
+from . import cdf5parser
 
 cdlparser.default_fill_values.update({
     str: "",
@@ -24,7 +24,7 @@ class CDL4Parser(cdf5parser.CDF5Parser):
     reserved_words = cdf5parser.dict_merge(extra_reserved_words, cdf5parser.CDF5Parser.reserved_words)
 
     # the full list of CDL tokens to parse - mostly named exactly as per the ncgen.l file
-    tokens =  ['GROUP',] + list(set(extra_reserved_words.values())) + cdf5parser.CDF5Parser.tokens
+    tokens = ['GROUP',] + list(set(extra_reserved_words.values())) + cdf5parser.CDF5Parser.tokens
 
     def t_GROUP(self, t) :
         r'(group|GROUP):[ \t]+[^\{]+'
