@@ -144,7 +144,7 @@ class CDLParser(object) :
    precedence = []
 
    def __init__(self, close_on_completion=False, file_format='NETCDF3_CLASSIC', log_level=None,
-      **kwargs) :
+                debug=False, **kwargs) :
       """
       The currently supported keyword arguments, with their default values, are described below. Any
       other keyword argments are passed through as-is to the PLY parser (via the yacc.yacc function).
@@ -167,10 +167,11 @@ class CDLParser(object) :
       self.ncdataset = None
       #self.dryrun = kwargs.pop('dryrun', False)   # TODO: enable dry-run option
       self.init_logger()
+      self.debug = debug  # turn on debug output
 
       # Build the lexer and parser
-      self.lexer = lex.lex(module=self, debug=kwargs.get('debug', False))
-      self.parser = yacc.yacc(module=self, debug=kwargs.get('debug', False), **kwargs)
+      self.lexer = lex.lex(module=self, debug=self.debug)
+      self.parser = yacc.yacc(module=self, debug=self.debug, **kwargs)
 
    def parse_file(self, cdlfile, ncfile=None) :
       """
@@ -219,7 +220,7 @@ class CDLParser(object) :
       self.curr_var = None
       self.curr_dim = None
       self.rec_dimname = None
-      self.parser.parse(input=cdltext, lexer=self.lexer)
+      self.parser.parse(input=cdltext, lexer=self.lexer, debug=(1 if self.debug else False))
       return self.ncdataset
 
    def init_logger(self) :
@@ -934,7 +935,7 @@ def fix_octal(octal_str) :
 #---------------------------------------------------------------------------------------------------
 def get_default_fill_value(np_dtype) :
 #---------------------------------------------------------------------------------------------------
-   """Returns the default netCDF fill value for the specified numpy dtype.char code."""
+   """Returns the default netCDF fill value for the specified numpy dtype."""
    try:
       return default_fill_values[np_dtype]
    except KeyError:
