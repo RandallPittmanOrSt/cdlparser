@@ -48,30 +48,20 @@ class CDF4Parser(cdf5parser.CDF5Parser):
     def p_gattdecl(self, p):
         """gattdecl : gatt EQUALS attvallist
                     | type gatt EQUALS attvallist"""
-        if p[2] == "=":
-            att_type = None
-            attid = p[1]
-            attvallist = p[3]
-        else:
-            att_type = p[1]
-            attid = p[2]
-            attvallist = p[4]
         if self.ncdataset:
-            self.set_attribute(':' + attid, attvallist, att_type=att_type)
+            if p[2] == "=":
+                self.set_attribute(':' + p[1], p[3])
+            else:
+                self.set_attribute(':' + p[2], p[4], att_type=p[1])
 
     def p_attdecl(self, p):
         """attdecl : att EQUALS attvallist
                    | type att EQUALS attvallist"""
-        if p[2] == "=":
-            att_type = None
-            attid = p[1]
-            attvallist = p[3]
-        else:
-            att_type = p[1]
-            attid = p[2]
-            attvallist = p[4]
         if self.ncdataset:
-            self.set_attribute(attid, attvallist, att_type=att_type)
+            if p[2] == "=":
+                self.set_attribute(p[1], p[3])
+            else:
+                self.set_attribute(p[2], p[4], att_type=p[1])
 
     def p_type(self, p):
         """type : UINT64_K
