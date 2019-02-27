@@ -71,8 +71,9 @@ from __future__ import print_function
 
 import codecs
 import sys, os, logging, types
-import six
 import re
+import six
+import traceback
 import ply.lex as lex
 from ply.lex import TOKEN
 import ply.yacc as yacc
@@ -156,6 +157,7 @@ class CDLParser(object) :
          'NETCDF4_CLASSIC' or 'NETCDF4' [default: 'NETCDF3_CLASSIC']
       :param log_level: Sets the logging level to one of the constants defined in the Python logging
          module [default: logging.WARNING]
+      :param debug: If set to true, the lexer and parser debug output is enabled. [default: False]
       """
       self.close_on_completion = close_on_completion
       self.file_format = file_format
@@ -713,7 +715,7 @@ class CDL3Parser(CDLParser) :
       if attid[0] == ':' :
          if attid[1:] in self.ncdataset.ncattrs() :
             raise CDLContentError("Duplicate global attribute: %s" % attid)
-         if NC4 and attval.dtype == np.dtype('str'):
+         if NC4 and attval.dtype == np.dtype('U'):
             self.ncdataset.setncattr_string(attid[1:], attval)
          else:
             self.ncdataset.setncattr(attid[1:], attval)
@@ -731,7 +733,7 @@ class CDL3Parser(CDLParser) :
                   attval = var.dtype.type(attval)
                except AttributeError:
                   # str dtype, maybe? (NetCDF4)
-                  if NC4 and var.dtype == np.dtype('str'):
+                  if NC4 and var.dtype == str:  # technically unicode in py2, but var dtype returns `str`
                      string_attr = True
                   else:
                      raise
@@ -807,10 +809,10 @@ class CDL3Parser(CDLParser) :
          if is_charvar :
             put_char_data(var, arr, reclen)
          else :
-            put_numeric_data(var, arr, reclen)
+            put_nonchar_data(var, arr, reclen)
       except Exception as exc :
          errmsg = "Error attempting to write data array for variable %s\n" % var._name
-         errmsg += "Exception details are as follows:\n%s" % str(exc)
+         errmsg += "Exception details are as follows:\n%s" % traceback.format_exc(exc)
          raise CDLContentError(errmsg)
 
    def _lextest(self, data) :
@@ -844,10 +846,10 @@ def numeric_token(t, nsuffix, basic_type_fn, np_type, type_name):
 
 
 #---------------------------------------------------------------------------------------------------
-def put_numeric_data(var, arr, reclen=0) :
+def put_nonchar_data(var, arr, reclen=0) :
 #---------------------------------------------------------------------------------------------------
-   """Write numeric data array to netcdf variable."""
-   nparr = np.array(arr, dtype=var.dtype)
+   """Write numeric or str data array to netcdf variable."""
+   nparr = np.array(arr, dtype=('U' if var.dtype == str else var.dtype))
    shape = list(var.shape)
    if reclen : shape[0] = len(arr) // reclen
    nparr.shape = shape

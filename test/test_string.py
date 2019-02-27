@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Unit tests for the CDF-5 constant types.
 """
@@ -11,18 +12,18 @@ import numpy as np
 class TestStrings(unittest.TestCase) :
 #---------------------------------------------------------------------------------------------------
     def setUp(self) :
-        cdltext = r"""netcdf cdf5_constants {
+        cdltext = u"""netcdf cdf5_constants {
             dimensions:
                 dim1 = 5;
             variables:
                 string strvar(dim1);
                 strvar:_FillValue = "؆";
-                string strvar:stratt = "ǐ\tǒƯ";
+                string strvar:stratt = "ǐ\\tǒƯ";
             // Global Attributes
                 uint :u4att = -10;  // test forced conversion to uint
                 string :strattb = "A string attribute!";
             data:
-                strvar = "abc", "defg", "_", "def", "\nƷƬƫ";
+                strvar = "abc", "defg", "_", "def", "\\nƷƬƫ";
             }"""
         parser = cdl4parser.CDL4Parser()
         self.tmpfh, self.tmpfile = tempfile.mkstemp(suffix='.nc')

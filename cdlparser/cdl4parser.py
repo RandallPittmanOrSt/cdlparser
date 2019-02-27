@@ -1,12 +1,13 @@
+import numpy as np
 import cdlparser
 from . import cdf5parser
 
 cdlparser.default_fill_values.update({
-    str: "",
+    np.dtype('U'): u"",
 })
 
 cdlparser.NC_NP_DATA_TYPE_MAP.update({
-   'string':  str,
+   'string':  'U',
 })
 
 class CDL4Parser(cdf5parser.CDF5Parser):
